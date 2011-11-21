@@ -4,11 +4,109 @@
  *  Created on: 06/10/2011
  *      Author: arturo
  */
+ 
+// YUV 2 RGB conversion by James Hughes under the following terms
+// Copyright (c) 2011, James Hughes
+// All rights reserved.
+
+// Permission is hereby granted, free of charge, to any person obtaining a copy
+// of this software and associated documentation files (the "Software"), to deal
+// in the Software without restriction, including without limitation the rights
+// to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+// copies of the Software, and to permit persons to whom the Software is
+// furnished to do so, subject to the following conditions:
+
+// The above copyright notice and this permission notice shall be included in
+// all copies or substantial portions of the Software.
+
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+// FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+// AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+// LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+// OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+// SOFTWARE.
 
 #include "ofxBlackmagicGrabber.h"
 #include "Poco/ScopedLock.h"
 
 string ofxBlackmagicGrabber::LOG_NAME="ofxBlackmagicGrabber";
+
+// tables are done for all possible values 0 - 255 of yuv
+// rather than just "legal" values of yuv.
+// two dimensional arrays for red &  blue, three dimensions for green
+void ofxBlackmagicGrabber::CreateLookupTables(){
+
+    int yy, uu, vv, ug_plus_vg, ub, vr, val;
+
+    // Red
+    for (int y = 0; y < 256; y++) {
+        for (int v = 0; v < 256; v++) {
+            yy         = y << 8;
+            vv         = v - 128;
+            vr         = vv * 359;
+            val        = (yy + vr) >>  8;
+            red[y][v]  = Clamp(val);
+        }
+    }
+
+    // Blue
+    for (int y = 0; y < 256; y++) {
+        for (int u = 0; u < 256; u++) {
+            yy          = y << 8;
+            uu          = u - 128;
+            ub          = uu * 454;
+            val         = (yy + ub) >> 8;
+            blue[y][u]  = Clamp(val);
+        }
+    }
+
+    // Green
+    for (int y = 0; y < 256; y++) {
+        for (int u = 0; u < 256; u++) {
+            for (int v = 0; v < 256; v++) {
+                yy              = y << 8;
+                uu              = u - 128;
+                vv              = v - 128;
+                ug_plus_vg      = uu * 88 + vv * 183;
+                val             = (yy - ug_plus_vg) >> 8;
+                green[y][u][v]  = Clamp(val);
+            }
+        }
+    }
+}
+
+void ofxBlackmagicGrabber::yuvToRGB(IDeckLinkVideoInputFrame * videoFrame)
+{
+    // convert 4 YUV macropixels to 6 RGB pixels
+    unsigned int boundry = videoFrame->GetWidth() * videoFrame->GetHeight() * 2;
+    unsigned char y, u, v;
+    unsigned char * yuv;
+    videoFrame->GetBytes((void**)&yuv);
+    ofPixels & pixels = *backPixels;
+
+    unsigned int j=0;
+
+	//#pragma omp for
+    for(unsigned int i=0; i<boundry; i+=4, j+=6){
+        y = yuv[i+1];
+        u = yuv[i];
+        v = yuv[i+2];
+
+        pixels[j]   = red[y][v];
+        pixels[j+1] = green[y][u][v];
+        pixels[j+2] = blue[y][u];
+
+        y = yuv[i+3];
+
+        pixels[j+3] = red[y][v];
+        pixels[j+4] = green[y][u][v];
+        pixels[j+5] = blue[y][u];
+    }
+
+}
+
+// End of YUV 2 RGB conversion
 
 
 // List of known pixel formats and their matching display names
@@ -383,81 +481,6 @@ inline unsigned char Clamp(int value)
     if(value > 255) return 255;
     if(value < 0)   return 0;
     return value;
-}
-
-
-// tables are done for all possible values 0 - 255 of yuv
-// rather than just "legal" values of yuv.
-// two dimensional arrays for red &  blue, three dimensions for green
-void ofxBlackmagicGrabber::CreateLookupTables(){
-
-    int yy, uu, vv, ug_plus_vg, ub, vr, val;
-
-    // Red
-    for (int y = 0; y < 256; y++) {
-        for (int v = 0; v < 256; v++) {
-            yy         = y << 8;
-            vv         = v - 128;
-            vr         = vv * 359;
-            val        = (yy + vr) >>  8;
-            red[y][v]  = Clamp(val);
-        }
-    }
-
-    // Blue
-    for (int y = 0; y < 256; y++) {
-        for (int u = 0; u < 256; u++) {
-            yy          = y << 8;
-            uu          = u - 128;
-            ub          = uu * 454;
-            val         = (yy + ub) >> 8;
-            blue[y][u]  = Clamp(val);
-        }
-    }
-
-    // Green
-    for (int y = 0; y < 256; y++) {
-        for (int u = 0; u < 256; u++) {
-            for (int v = 0; v < 256; v++) {
-                yy              = y << 8;
-                uu              = u - 128;
-                vv              = v - 128;
-                ug_plus_vg      = uu * 88 + vv * 183;
-                val             = (yy - ug_plus_vg) >> 8;
-                green[y][u][v]  = Clamp(val);
-            }
-        }
-    }
-}
-
-void ofxBlackmagicGrabber::yuvToRGB(IDeckLinkVideoInputFrame * videoFrame)
-{
-    // convert 4 YUV macropixels to 6 RGB pixels
-    unsigned int boundry = videoFrame->GetWidth() * videoFrame->GetHeight() * 2;
-    unsigned char y, u, v;
-    unsigned char * yuv;
-    videoFrame->GetBytes((void**)&yuv);
-    ofPixels & pixels = *backPixels;
-
-    unsigned int j=0;
-
-	//#pragma omp for
-    for(unsigned int i=0; i<boundry; i+=4, j+=6){
-        y = yuv[i+1];
-        u = yuv[i];
-        v = yuv[i+2];
-
-        pixels[j]   = red[y][v];
-        pixels[j+1] = green[y][u][v];
-        pixels[j+2] = blue[y][u];
-
-        y = yuv[i+3];
-
-        pixels[j+3] = red[y][v];
-        pixels[j+4] = green[y][u][v];
-        pixels[j+5] = blue[y][u];
-    }
-
 }
 
 void ofxBlackmagicGrabber::deinterlace(){
