@@ -94,7 +94,7 @@ void ofxBlackmagicGrabber::yuvToRGB(IDeckLinkVideoInputFrame * videoFrame)
 
     unsigned int j=0;
 
-	//#pragma omp for
+	#pragma omp for
     for(unsigned int i=0; i<boundry; i+=4, j+=6){
         y = yuv[i+1];
         u = yuv[i];

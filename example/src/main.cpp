@@ -22,6 +22,11 @@ public:
 	void draw() {
 		img.draw(0, 0, ofGetWidth(), ofGetHeight());
 	}
+	void keyPressed(int key) {
+		if(key == 'f') {
+			ofToggleFullscreen();
+		}
+	}
 };
 
 int main() {
