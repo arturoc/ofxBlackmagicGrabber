@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		1000B5124768562562799FDA /* ofxBlackmagicGrabber.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 3B162EF132F98B3769597A62 /* ofxBlackmagicGrabber.cpp */; };
-		27B9F9DE1812CD90001650A0 /* DeckLinkAPIDispatch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27B9F9DD1812CD90001650A0 /* DeckLinkAPIDispatch.cpp */; };
+		27CAAC62181A9A5C00AD11EA /* DeckLinkAPIDispatch.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 27CAAC61181A9A5C00AD11EA /* DeckLinkAPIDispatch.cpp */; };
 		BBAB23CB13894F3D00AA2426 /* GLUT.framework in CopyFiles */ = {isa = PBXBuildFile; fileRef = BBAB23BE13894E4700AA2426 /* GLUT.framework */; };
 		E4328149138ABC9F0047C5CB /* openFrameworksDebug.a in Frameworks */ = {isa = PBXBuildFile; fileRef = E4328148138ABC890047C5CB /* openFrameworksDebug.a */; };
 		E45BE97B0E8CC7DD009D7055 /* AGL.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E45BE9710E8CC7DD009D7055 /* AGL.framework */; };
@@ -62,14 +62,7 @@
 
 /* Begin PBXFileReference section */
 		10E83BC79ED27526AB0FE86D /* ofxBlackmagicGrabber.h */ = {isa = PBXFileReference; explicitFileType = sourcecode.c.h; fileEncoding = 30; name = ofxBlackmagicGrabber.h; path = ../../../addons/ofxBlackmagicGrabber/src/ofxBlackmagicGrabber.h; sourceTree = SOURCE_ROOT; };
-		27B9F9D41812CD66001650A0 /* DeckLinkAPI.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DeckLinkAPI.h; sourceTree = "<group>"; };
-		27B9F9D51812CD66001650A0 /* DeckLinkAPIConfiguration.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DeckLinkAPIConfiguration.h; sourceTree = "<group>"; };
-		27B9F9D61812CD66001650A0 /* DeckLinkAPIDeckControl.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DeckLinkAPIDeckControl.h; sourceTree = "<group>"; };
-		27B9F9D71812CD66001650A0 /* DeckLinkAPIDiscovery.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DeckLinkAPIDiscovery.h; sourceTree = "<group>"; };
-		27B9F9D91812CD66001650A0 /* DeckLinkAPIModes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DeckLinkAPIModes.h; sourceTree = "<group>"; };
-		27B9F9DA1812CD66001650A0 /* DeckLinkAPIStreaming.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DeckLinkAPIStreaming.h; sourceTree = "<group>"; };
-		27B9F9DB1812CD66001650A0 /* DeckLinkAPITypes.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = DeckLinkAPITypes.h; sourceTree = "<group>"; };
-		27B9F9DD1812CD90001650A0 /* DeckLinkAPIDispatch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DeckLinkAPIDispatch.cpp; sourceTree = "<group>"; };
+		27CAAC61181A9A5C00AD11EA /* DeckLinkAPIDispatch.cpp */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.cpp.cpp; path = DeckLinkAPIDispatch.cpp; sourceTree = "<group>"; };
 		3B162EF132F98B3769597A62 /* ofxBlackmagicGrabber.cpp */ = {isa = PBXFileReference; explicitFileType = sourcecode.cpp.cpp; fileEncoding = 30; name = ofxBlackmagicGrabber.cpp; path = ../../../addons/ofxBlackmagicGrabber/src/ofxBlackmagicGrabber.cpp; sourceTree = SOURCE_ROOT; };
 		BBAB23BE13894E4700AA2426 /* GLUT.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = GLUT.framework; path = ../../../libs/glut/lib/osx/GLUT.framework; sourceTree = "<group>"; };
 		E4328143138ABC890047C5CB /* openFrameworksLib.xcodeproj */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.pb-project"; name = openFrameworksLib.xcodeproj; path = ../../../libs/openFrameworksCompiled/project/osx/openFrameworksLib.xcodeproj; sourceTree = SOURCE_ROOT; };
@@ -132,34 +125,27 @@
 			name = src;
 			sourceTree = "<group>";
 		};
-		27B9F9D11812CD66001650A0 /* lib */ = {
+		27CAAC55181A9A3800AD11EA /* libs */ = {
 			isa = PBXGroup;
 			children = (
-				27B9F9D21812CD66001650A0 /* DeckLink */,
+				27CAAC56181A9A3800AD11EA /* DeckLink */,
 			);
-			name = lib;
-			path = ../lib;
+			name = libs;
+			path = ../libs;
 			sourceTree = "<group>";
 		};
-		27B9F9D21812CD66001650A0 /* DeckLink */ = {
+		27CAAC56181A9A3800AD11EA /* DeckLink */ = {
 			isa = PBXGroup;
 			children = (
-				27B9F9D31812CD66001650A0 /* include */,
+				27CAAC57181A9A3800AD11EA /* include */,
 			);
 			path = DeckLink;
 			sourceTree = "<group>";
 		};
-		27B9F9D31812CD66001650A0 /* include */ = {
+		27CAAC57181A9A3800AD11EA /* include */ = {
 			isa = PBXGroup;
 			children = (
-				27B9F9DD1812CD90001650A0 /* DeckLinkAPIDispatch.cpp */,
-				27B9F9D41812CD66001650A0 /* DeckLinkAPI.h */,
-				27B9F9D51812CD66001650A0 /* DeckLinkAPIConfiguration.h */,
-				27B9F9D61812CD66001650A0 /* DeckLinkAPIDeckControl.h */,
-				27B9F9D71812CD66001650A0 /* DeckLinkAPIDiscovery.h */,
-				27B9F9D91812CD66001650A0 /* DeckLinkAPIModes.h */,
-				27B9F9DA1812CD66001650A0 /* DeckLinkAPIStreaming.h */,
-				27B9F9DB1812CD66001650A0 /* DeckLinkAPITypes.h */,
+				27CAAC61181A9A5C00AD11EA /* DeckLinkAPIDispatch.cpp */,
 			);
 			path = include;
 			sourceTree = "<group>";
@@ -167,7 +153,7 @@
 		A6A2D7A6895861325AD16E41 /* ofxBlackmagicGrabber */ = {
 			isa = PBXGroup;
 			children = (
-				27B9F9D11812CD66001650A0 /* lib */,
+				27CAAC55181A9A3800AD11EA /* libs */,
 				193B76899F94BC2DAE42C578 /* src */,
 			);
 			name = ofxBlackmagicGrabber;
@@ -346,7 +332,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				E4B69E200A3A1BDC003C02F2 /* main.cpp in Sources */,
-				27B9F9DE1812CD90001650A0 /* DeckLinkAPIDispatch.cpp in Sources */,
+				27CAAC62181A9A5C00AD11EA /* DeckLinkAPIDispatch.cpp in Sources */,
 				1000B5124768562562799FDA /* ofxBlackmagicGrabber.cpp in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
