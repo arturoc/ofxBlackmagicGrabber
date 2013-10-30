@@ -53,7 +53,7 @@ void ofxBlackmagicGrabber::CreateLookupTables(){
             vv         = v - 128;
             vr         = vv * 359;
             val        = (yy + vr) >>  8;
-            red[y][v]  = Clamp(val);
+            red[v][y]  = Clamp(val);
         }
     }
 
@@ -64,7 +64,7 @@ void ofxBlackmagicGrabber::CreateLookupTables(){
             uu          = u - 128;
             ub          = uu * 454;
             val         = (yy + ub) >> 8;
-            blue[y][u]  = Clamp(val);
+            blue[u][y]  = Clamp(val);
         }
     }
 
@@ -77,7 +77,7 @@ void ofxBlackmagicGrabber::CreateLookupTables(){
                 vv              = v - 128;
                 ug_plus_vg      = uu * 88 + vv * 183;
                 val             = (yy - ug_plus_vg) >> 8;
-                green[y][u][v]  = Clamp(val);
+                green[v][u][y]  = Clamp(val);
             }
         }
     }
@@ -87,28 +87,27 @@ void ofxBlackmagicGrabber::yuvToRGB(IDeckLinkVideoInputFrame * videoFrame)
 {
     // convert 4 YUV macropixels to 6 RGB pixels
     unsigned int boundry = videoFrame->GetWidth() * videoFrame->GetHeight() * 2;
-    unsigned char y, u, v;
+    unsigned char u, y0, v, y1;
     unsigned char * yuv;
     videoFrame->GetBytes((void**)&yuv);
-    ofPixels & pixels = *backPixels;
+    ofPixels & rgb = *backPixels;
 
     unsigned int j=0;
 
-	#pragma omp for
-    for(unsigned int i=0; i<boundry; i+=4, j+=6){
-        y = yuv[i+1];
-        u = yuv[i];
+    for(unsigned int i=0, j=0; i<boundry; i+=4, j+=6){
+        u = yuv[i+0];
+        y0 = yuv[i+1];
         v = yuv[i+2];
-
-        pixels[j]   = red[y][v];
-        pixels[j+1] = green[y][u][v];
-        pixels[j+2] = blue[y][u];
-
-        y = yuv[i+3];
-
-        pixels[j+3] = red[y][v];
-        pixels[j+4] = green[y][u][v];
-        pixels[j+5] = blue[y][u];
+        y1 = yuv[i+3];
+		
+        rgb[j+0] = red[v][y0];
+        rgb[j+3] = red[v][y1];
+		
+        rgb[j+1] = green[u][v][y0];
+        rgb[j+4] = green[u][v][y1];
+		
+        rgb[j+2] = blue[u][y0];
+        rgb[j+5] = blue[u][y1];
     }
 
 }
@@ -548,10 +547,10 @@ HRESULT ofxBlackmagicGrabber::VideoInputFrameArrived(IDeckLinkVideoInputFrame * 
 				}
 			}
 
-			ofLogVerbose(LOG_NAME) << "Frame received (#" <<  frameCount
-					<< ") [" << (timecodeString != NULL ? timecodeString : "No timecode")
-					<< "] -" << (rightEyeFrame != NULL ? "Valid Frame (3D left/right)" : "Valid Frame")
-					<< "- Size: " << (videoFrame->GetRowBytes() * videoFrame->GetHeight()) << "bytes";
+//			ofLogVerbose(LOG_NAME) << "Frame received (#" <<  frameCount
+//					<< ") [" << (timecodeString != NULL ? timecodeString : "No timecode")
+//					<< "] -" << (rightEyeFrame != NULL ? "Valid Frame (3D left/right)" : "Valid Frame")
+//					<< "- Size: " << (videoFrame->GetRowBytes() * videoFrame->GetHeight()) << "bytes";
 
 			if (timecodeString)
 				free((void*)timecodeString);
