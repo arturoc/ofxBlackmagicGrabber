@@ -28,7 +28,7 @@ public:
 	virtual ULONG Release(){}
 	// common ofBaseVideoGrabber
 
-	void	listDevices();
+	vector<ofVideoDevice> listDevices();
 	bool	initGrabber(int w, int h);
 	void	update();
 	bool	isFrameNew();
@@ -45,7 +45,7 @@ public:
 	void setDeviceID(int _deviceID);
 	void setDesiredFrameRate(int framerate);
 	void videoSettings();
-	void setPixelFormat(ofPixelFormat pixelFormat);
+	bool setPixelFormat(ofPixelFormat pixelFormat);
 	ofPixelFormat getPixelFormat();
 
 	static string LOG_NAME;

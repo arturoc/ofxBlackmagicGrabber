@@ -30,6 +30,13 @@
 #include "ofxBlackmagicGrabber.h"
 #include "Poco/ScopedLock.h"
 
+inline unsigned char Clamp(int value)
+{
+	if(value > 255) return 255;
+	if(value < 0)   return 0;
+	return value;
+}
+
 string ofxBlackmagicGrabber::LOG_NAME="ofxBlackmagicGrabber";
 
 // tables are done for all possible values 0 - 255 of yuv
@@ -46,7 +53,7 @@ void ofxBlackmagicGrabber::CreateLookupTables(){
             vv         = v - 128;
             vr         = vv * 359;
             val        = (yy + vr) >>  8;
-            red[y][v]  = Clamp(val);
+            red[v][y]  = Clamp(val);
         }
     }
 
@@ -57,7 +64,7 @@ void ofxBlackmagicGrabber::CreateLookupTables(){
             uu          = u - 128;
             ub          = uu * 454;
             val         = (yy + ub) >> 8;
-            blue[y][u]  = Clamp(val);
+            blue[u][y]  = Clamp(val);
         }
     }
 
@@ -70,7 +77,7 @@ void ofxBlackmagicGrabber::CreateLookupTables(){
                 vv              = v - 128;
                 ug_plus_vg      = uu * 88 + vv * 183;
                 val             = (yy - ug_plus_vg) >> 8;
-                green[y][u][v]  = Clamp(val);
+                green[v][u][y]  = Clamp(val);
             }
         }
     }
@@ -80,28 +87,27 @@ void ofxBlackmagicGrabber::yuvToRGB(IDeckLinkVideoInputFrame * videoFrame)
 {
     // convert 4 YUV macropixels to 6 RGB pixels
     unsigned int boundry = videoFrame->GetWidth() * videoFrame->GetHeight() * 2;
-    unsigned char y, u, v;
+    unsigned char u, y0, v, y1;
     unsigned char * yuv;
     videoFrame->GetBytes((void**)&yuv);
-    ofPixels & pixels = *backPixels;
+    ofPixels & rgb = *backPixels;
 
     unsigned int j=0;
 
-	//#pragma omp for
-    for(unsigned int i=0; i<boundry; i+=4, j+=6){
-        y = yuv[i+1];
-        u = yuv[i];
+    for(unsigned int i=0, j=0; i<boundry; i+=4, j+=6){
+        u = yuv[i+0];
+        y0 = yuv[i+1];
         v = yuv[i+2];
-
-        pixels[j]   = red[y][v];
-        pixels[j+1] = green[y][u][v];
-        pixels[j+2] = blue[y][u];
-
-        y = yuv[i+3];
-
-        pixels[j+3] = red[y][v];
-        pixels[j+4] = green[y][u][v];
-        pixels[j+5] = blue[y][u];
+        y1 = yuv[i+3];
+		
+        rgb[j+0] = red[v][y0];
+        rgb[j+3] = red[v][y1];
+		
+        rgb[j+1] = green[u][v][y0];
+        rgb[j+4] = green[u][v][y1];
+		
+        rgb[j+2] = blue[u][y0];
+        rgb[j+5] = blue[u][y1];
     }
 
 }
@@ -139,7 +145,8 @@ static void	print_attributes (IDeckLink* deckLink)
 
 		if (supported)
 		{
-			result = deckLinkAttributes->GetString(BMDDeckLinkSerialPortDeviceName, (const char **) &serialPortName);
+			CFStringRef serialPortNameString = CFStringCreateWithCString(kCFAllocatorDefault, serialPortName, kCFStringEncodingMacRoman);
+			result = deckLinkAttributes->GetString(BMDDeckLinkSerialPortDeviceName, &serialPortNameString);
 			if (result == S_OK)
 			{
 				printf(" %-40s %s\n", "Serial port name: ", serialPortName);
@@ -264,9 +271,8 @@ static void	print_output_modes (IDeckLink* deckLink)
 	printf("Supported video output display modes and pixel formats:\n");
 	while (displayModeIterator->Next(&displayMode) == S_OK)
 	{
-		char *			displayModeString = NULL;
-
-		result = displayMode->GetName((const char **) &displayModeString);
+		CFStringRef displayModeString;
+		result = displayMode->GetName(&displayModeString);
 		if (result == S_OK)
 		{
 			char					modeName[64];
@@ -297,7 +303,7 @@ static void	print_output_modes (IDeckLink* deckLink)
 
 			printf("\n");
 
-			free(displayModeString);
+//			free(displayModeString);
 		}
 
 		// Release the IDeckLinkDisplayMode object to prevent a leak
@@ -476,13 +482,6 @@ void ofxBlackmagicGrabber::setDeinterlace(bool deinterlace){
 	bDeinterlace = deinterlace;
 }
 
-inline unsigned char Clamp(int value)
-{
-    if(value > 255) return 255;
-    if(value < 0)   return 0;
-    return value;
-}
-
 void ofxBlackmagicGrabber::deinterlace(){
 	 for (int i = 1; i < backPixels->getHeight()-1; i++){
 
@@ -503,7 +502,8 @@ void ofxBlackmagicGrabber::deinterlace(){
 }
 
 HRESULT ofxBlackmagicGrabber::VideoInputFormatChanged(BMDVideoInputFormatChangedEvents events, IDeckLinkDisplayMode* displayMode, BMDDetectedVideoInputFormatFlags flags){
-	long num,den;
+	BMDTimeValue num;
+	BMDTimeScale den;
 	displayMode->GetFrameRate(&num,&den);
 	ofLogVerbose(LOG_NAME) << "video format changed" << displayMode->GetWidth() << "x" << displayMode->GetHeight() << "fps: " << num << "/" << den;
 
@@ -542,14 +542,15 @@ HRESULT ofxBlackmagicGrabber::VideoInputFrameArrived(IDeckLinkVideoInputFrame * 
 				IDeckLinkTimecode *timecode;
 				if (videoFrame->GetTimecode(g_timecodeFormat, &timecode) == S_OK)
 				{
+					CFStringRef timecodeString;
 					timecode->GetString(&timecodeString);
 				}
 			}
 
-			ofLogVerbose(LOG_NAME) << "Frame received (#" <<  frameCount
-					<< ") [" << (timecodeString != NULL ? timecodeString : "No timecode")
-					<< "] -" << (rightEyeFrame != NULL ? "Valid Frame (3D left/right)" : "Valid Frame")
-					<< "- Size: " << (videoFrame->GetRowBytes() * videoFrame->GetHeight()) << "bytes";
+//			ofLogVerbose(LOG_NAME) << "Frame received (#" <<  frameCount
+//					<< ") [" << (timecodeString != NULL ? timecodeString : "No timecode")
+//					<< "] -" << (rightEyeFrame != NULL ? "Valid Frame (3D left/right)" : "Valid Frame")
+//					<< "- Size: " << (videoFrame->GetRowBytes() * videoFrame->GetHeight()) << "bytes";
 
 			if (timecodeString)
 				free((void*)timecodeString);
@@ -585,11 +586,13 @@ HRESULT ofxBlackmagicGrabber::VideoInputFrameArrived(IDeckLinkVideoInputFrame * 
 	return S_OK;
 }
 
-void ofxBlackmagicGrabber::listDevices() {
+vector<ofVideoDevice> ofxBlackmagicGrabber::listDevices() {
 	IDeckLinkIterator*		deckLinkIterator;
 	IDeckLink*				deckLink;
 	int						numDevices = 0;
 	HRESULT					result;
+	
+	vector<ofVideoDevice> devices;
 
 	// Create an IDeckLinkIterator object to enumerate all DeckLink cards in the system
 	deckLinkIterator = CreateDeckLinkIteratorInstance();
@@ -599,7 +602,7 @@ void ofxBlackmagicGrabber::listDevices() {
 
 	// Enumerate all cards in this system
 	while (deckLinkIterator->Next(&deckLink) == S_OK){
-		char *		deviceNameString = NULL;
+		CFStringRef deviceNameString;
 
 		// Increment the total number of DeckLink cards found
 		numDevices++;
@@ -607,11 +610,11 @@ void ofxBlackmagicGrabber::listDevices() {
 			printf("\n\n");
 
 		// *** Print the model name of the DeckLink card
-		result = deckLink->GetModelName((const char **) &deviceNameString);
+		result = deckLink->GetModelName(&deviceNameString);
 		if (result == S_OK)
 		{
 			printf("=============== %s ===============\n\n", deviceNameString);
-			free(deviceNameString);
+//			free(deviceNameString);
 		}
 
 		print_attributes(deckLink);
@@ -632,6 +635,7 @@ void ofxBlackmagicGrabber::listDevices() {
 	if (numDevices == 0)
 		ofLogError(LOG_NAME) <<  "No Blackmagic Design devices were found.";
 
+	return devices;
 }
 
 bool ofxBlackmagicGrabber::initGrabber(int w, int h) {
@@ -677,7 +681,7 @@ bool ofxBlackmagicGrabber::initGrabber(int w, int h) {
 	while (displayModeIterator->Next(&displayMode) == S_OK){
 		if (g_videoModeIndex == displayMode->GetDisplayMode()){
 			BMDDisplayModeSupport result;
-			const char *displayModeName;
+			CFStringRef displayModeName;
 
 			foundDisplayMode = true;
 			displayMode->GetName(&displayModeName);
@@ -820,8 +824,8 @@ void ofxBlackmagicGrabber::videoSettings() {
 
 }
 
-void ofxBlackmagicGrabber::setPixelFormat(ofPixelFormat pixelFormat) {
-
+bool ofxBlackmagicGrabber::setPixelFormat(ofPixelFormat pixelFormat) {
+	return false;
 }
 
 ofPixelFormat ofxBlackmagicGrabber::getPixelFormat() {
